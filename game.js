@@ -108,6 +108,8 @@ function updateScore(){
 let score = 0;
 let bestScore = Number(localStorage.getItem('flappyBuddyBest') || 0);
 let state = 'start'; // 'start' | 'playing' | 'gameover'
+let groundOffset = 0;
+let elapsedTime = 0;
 
 let lastTime = null;
 
@@ -139,11 +141,47 @@ function updateBuddy(dt){
   }
 }
 
+const stars = Array.from({ length: 40 }, () => ({
+  x: Math.random() * WIDTH,
+  y: Math.random() * (HEIGHT * 0.55),
+  r: Math.random() * 1.6 + 0.4,
+  twinkle: Math.random() * Math.PI * 2
+}));
+
+function drawSky(elapsed){
+  ctx.fillStyle = '#ffb347';
+  ctx.beginPath();
+  ctx.arc(WIDTH - 70, 90, 34, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,179,71,0.25)';
+  ctx.beginPath();
+  ctx.arc(WIDTH - 70, 90, 46, 0, Math.PI * 2);
+  ctx.fill();
+
+  for (const star of stars){
+    const alpha = 0.4 + 0.4 * Math.sin(elapsed * 2 + star.twinkle);
+    ctx.fillStyle = `rgba(255,243,226,${alpha.toFixed(2)})`;
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 function drawGround(){
   ctx.fillStyle = '#2d1b3d';
   ctx.fillRect(0, HEIGHT - GROUND_HEIGHT, WIDTH, GROUND_HEIGHT);
   ctx.fillStyle = '#3a2450';
   ctx.fillRect(0, HEIGHT - GROUND_HEIGHT, WIDTH, 10);
+
+  ctx.fillStyle = '#5ec8b3';
+  for (let x = -groundOffset % 40; x < WIDTH; x += 40){
+    ctx.beginPath();
+    ctx.moveTo(x, HEIGHT - GROUND_HEIGHT + 10);
+    ctx.lineTo(x + 8, HEIGHT - GROUND_HEIGHT);
+    ctx.lineTo(x + 16, HEIGHT - GROUND_HEIGHT + 10);
+    ctx.closePath();
+    ctx.fill();
+  }
 }
 
 function drawBuddy(){
@@ -196,6 +234,7 @@ function drawBuddy(){
 
 function render(){
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
+  drawSky(elapsedTime);
   drawPipes();
   drawGround();
   drawBuddy();
@@ -214,6 +253,7 @@ function startGame(){
   pipes = [];
   timeSinceSpawn = 0;
   score = 0;
+  groundOffset = 0;
   resetBuddy();
   state = 'playing';
 
@@ -240,10 +280,13 @@ function loop(timestamp){
   const dt = Math.min((timestamp - lastTime) / 1000, 0.033);
   lastTime = timestamp;
 
+  elapsedTime += dt;
+
   if (state === 'playing'){
     updateBuddy(dt);
     updatePipes(dt);
     updateScore();
+    groundOffset += PIPE_SPEED * dt;
     scoreDisplay.textContent = String(score);
 
     if (checkCollisions()){
