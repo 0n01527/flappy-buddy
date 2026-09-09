@@ -78,6 +78,37 @@ function drawPipes(){
   }
 }
 
+function checkCollisions(){
+  if (buddy.y + buddy.radius >= HEIGHT - GROUND_HEIGHT){
+    return true;
+  }
+
+  for (const pipe of pipes){
+    const withinX = buddy.x + buddy.radius > pipe.x && buddy.x - buddy.radius < pipe.x + PIPE_WIDTH;
+    if (!withinX) continue;
+
+    const hitsTop = buddy.y - buddy.radius < pipe.topHeight;
+    const hitsBottom = buddy.y + buddy.radius > pipe.bottomY;
+    if (hitsTop || hitsBottom){
+      return true;
+    }
+  }
+  return false;
+}
+
+function updateScore(){
+  for (const pipe of pipes){
+    if (!pipe.passed && pipe.x + PIPE_WIDTH < buddy.x - buddy.radius){
+      pipe.passed = true;
+      score += 1;
+    }
+  }
+}
+
+let score = 0;
+let bestScore = Number(localStorage.getItem('flappyBuddyBest') || 0);
+let state = 'start'; // 'start' | 'playing' | 'gameover'
+
 let lastTime = null;
 
 function resetBuddy(){
@@ -170,20 +201,63 @@ function render(){
   drawBuddy();
 }
 
+const startScreen = document.getElementById('startScreen');
+const gameOverScreen = document.getElementById('gameOverScreen');
+const hud = document.getElementById('hud');
+const scoreDisplay = document.getElementById('scoreDisplay');
+const finalScoreEl = document.getElementById('finalScore');
+const bestScoreEl = document.getElementById('bestScore');
+const startBtn = document.getElementById('startBtn');
+const retryBtn = document.getElementById('retryBtn');
+
+function startGame(){
+  pipes = [];
+  timeSinceSpawn = 0;
+  score = 0;
+  resetBuddy();
+  state = 'playing';
+
+  startScreen.classList.add('hidden');
+  gameOverScreen.classList.add('hidden');
+  hud.classList.remove('hidden');
+  scoreDisplay.textContent = '0';
+}
+
+function endGame(){
+  state = 'gameover';
+  if (score > bestScore){
+    bestScore = score;
+    localStorage.setItem('flappyBuddyBest', String(bestScore));
+  }
+  finalScoreEl.textContent = String(score);
+  bestScoreEl.textContent = String(bestScore);
+  hud.classList.add('hidden');
+  gameOverScreen.classList.remove('hidden');
+}
+
 function loop(timestamp){
   if (lastTime === null) lastTime = timestamp;
   const dt = Math.min((timestamp - lastTime) / 1000, 0.033);
   lastTime = timestamp;
 
-  updateBuddy(dt);
-  updatePipes(dt);
-  render();
+  if (state === 'playing'){
+    updateBuddy(dt);
+    updatePipes(dt);
+    updateScore();
+    scoreDisplay.textContent = String(score);
 
+    if (checkCollisions()){
+      endGame();
+    }
+  }
+
+  render();
   requestAnimationFrame(loop);
 }
 
 function handleFlapInput(e){
   if (e.type === 'keydown' && e.code !== 'Space') return;
+  if (state !== 'playing') return;
   e.preventDefault();
   flap();
 }
@@ -191,6 +265,9 @@ function handleFlapInput(e){
 window.addEventListener('keydown', handleFlapInput);
 canvas.addEventListener('mousedown', handleFlapInput);
 canvas.addEventListener('touchstart', handleFlapInput, { passive:false });
+
+startBtn.addEventListener('click', startGame);
+retryBtn.addEventListener('click', startGame);
 
 resetBuddy();
 requestAnimationFrame(loop);
