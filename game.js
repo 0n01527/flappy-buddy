@@ -16,6 +16,68 @@ const buddy = {
   rotation: 0
 };
 
+const PIPE_WIDTH = 64;
+const PIPE_GAP = 190;
+const PIPE_SPEED = 190; // px/s
+const PIPE_SPAWN_INTERVAL = 1.5; // seconds
+
+let pipes = [];
+let timeSinceSpawn = 0;
+
+function spawnPipe(){
+  const margin = 80;
+  const minTop = margin;
+  const maxTop = HEIGHT - GROUND_HEIGHT - PIPE_GAP - margin;
+  const topHeight = minTop + Math.random() * (maxTop - minTop);
+  pipes.push({
+    x: WIDTH + PIPE_WIDTH,
+    topHeight,
+    bottomY: topHeight + PIPE_GAP,
+    passed: false
+  });
+}
+
+function updatePipes(dt){
+  timeSinceSpawn += dt;
+  if (timeSinceSpawn >= PIPE_SPAWN_INTERVAL){
+    timeSinceSpawn = 0;
+    spawnPipe();
+  }
+
+  for (const pipe of pipes){
+    pipe.x -= PIPE_SPEED * dt;
+  }
+
+  pipes = pipes.filter(pipe => pipe.x + PIPE_WIDTH > -10);
+}
+
+function drawPipe(x, topHeight, bottomY){
+  const capHeight = 18;
+
+  // top pillar
+  ctx.fillStyle = '#8b5e34';
+  ctx.fillRect(x, 0, PIPE_WIDTH, topHeight);
+  ctx.fillStyle = '#6b4423';
+  ctx.fillRect(x - 4, topHeight - capHeight, PIPE_WIDTH + 8, capHeight);
+  ctx.fillStyle = '#5ec8b3';
+  ctx.fillRect(x - 4, topHeight - capHeight - 4, PIPE_WIDTH + 8, 4);
+
+  // bottom pillar
+  const bottomHeight = HEIGHT - GROUND_HEIGHT - bottomY;
+  ctx.fillStyle = '#8b5e34';
+  ctx.fillRect(x, bottomY, PIPE_WIDTH, bottomHeight);
+  ctx.fillStyle = '#6b4423';
+  ctx.fillRect(x - 4, bottomY, PIPE_WIDTH + 8, capHeight);
+  ctx.fillStyle = '#5ec8b3';
+  ctx.fillRect(x - 4, bottomY + capHeight, PIPE_WIDTH + 8, 4);
+}
+
+function drawPipes(){
+  for (const pipe of pipes){
+    drawPipe(pipe.x, pipe.topHeight, pipe.bottomY);
+  }
+}
+
 let lastTime = null;
 
 function resetBuddy(){
@@ -103,6 +165,7 @@ function drawBuddy(){
 
 function render(){
   ctx.clearRect(0, 0, WIDTH, HEIGHT);
+  drawPipes();
   drawGround();
   drawBuddy();
 }
@@ -113,6 +176,7 @@ function loop(timestamp){
   lastTime = timestamp;
 
   updateBuddy(dt);
+  updatePipes(dt);
   render();
 
   requestAnimationFrame(loop);
