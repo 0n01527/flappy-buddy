@@ -355,6 +355,10 @@ function loop(timestamp){
     groundOffset += PIPE_SPEED * dt;
     scoreDisplay.textContent = String(score);
 
+    if (score >= 5){
+      endGame();
+    }
+
     if (invulnerable){
       invulnerableTimer -= dt;
       if (invulnerableTimer <= 0){
