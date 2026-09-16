@@ -17,7 +17,8 @@ const buddy = {
 };
 
 const PIPE_WIDTH = 64;
-const PIPE_GAP = 190;
+const PIPE_GAP_MIN = 140; // narrow, tense gaps
+const PIPE_GAP_MAX = 230; // wide, easy gaps
 const PIPE_SPEED = 190; // px/s
 const PIPE_SPAWN_INTERVAL = 1.5; // seconds
 
@@ -25,14 +26,15 @@ let pipes = [];
 let timeSinceSpawn = 0;
 
 function spawnPipe(){
+  const gap = PIPE_GAP_MIN + Math.random() * (PIPE_GAP_MAX - PIPE_GAP_MIN);
   const margin = 80;
   const minTop = margin;
-  const maxTop = HEIGHT - GROUND_HEIGHT - PIPE_GAP - margin;
+  const maxTop = HEIGHT - GROUND_HEIGHT - gap - margin;
   const topHeight = minTop + Math.random() * (maxTop - minTop);
   pipes.push({
     x: WIDTH + PIPE_WIDTH,
     topHeight,
-    bottomY: topHeight + PIPE_GAP,
+    bottomY: topHeight + gap,
     passed: false
   });
 }
