@@ -17,10 +17,27 @@ const buddy = {
 };
 
 const PIPE_WIDTH = 64;
-const PIPE_GAP_MIN = 140; // narrow, tense gaps
-const PIPE_GAP_MAX = 230; // wide, easy gaps
-const PIPE_SPEED = 190; // px/s
-const PIPE_SPAWN_INTERVAL = 1.5; // seconds
+
+const DIFFICULTY_PRESETS = {
+  easy:   { gapMin: 190, gapMax: 260, speed: 160, spawnInterval: 1.7 },
+  normal: { gapMin: 140, gapMax: 230, speed: 190, spawnInterval: 1.5 },
+  hard:   { gapMin: 110, gapMax: 180, speed: 230, spawnInterval: 1.2 }
+};
+
+let currentDifficulty = 'normal';
+let PIPE_GAP_MIN = DIFFICULTY_PRESETS.normal.gapMin;
+let PIPE_GAP_MAX = DIFFICULTY_PRESETS.normal.gapMax;
+let PIPE_SPEED = DIFFICULTY_PRESETS.normal.speed;
+let PIPE_SPAWN_INTERVAL = DIFFICULTY_PRESETS.normal.spawnInterval;
+
+function applyDifficulty(name){
+  const preset = DIFFICULTY_PRESETS[name] || DIFFICULTY_PRESETS.normal;
+  currentDifficulty = name;
+  PIPE_GAP_MIN = preset.gapMin;
+  PIPE_GAP_MAX = preset.gapMax;
+  PIPE_SPEED = preset.speed;
+  PIPE_SPAWN_INTERVAL = preset.spawnInterval;
+}
 
 let pipes = [];
 let timeSinceSpawn = 0;
@@ -112,6 +129,12 @@ let bestScore = Number(localStorage.getItem('flappyBuddyBest') || 0);
 let state = 'start'; // 'start' | 'playing' | 'gameover'
 let groundOffset = 0;
 let elapsedTime = 0;
+
+const LIVES_MAX = 3;
+let lives = LIVES_MAX;
+let invulnerable = false;
+let invulnerableTimer = 0;
+const INVULNERABLE_DURATION = 1.2; // seconds
 
 let lastTime = null;
 
@@ -239,7 +262,11 @@ function render(){
   drawSky(elapsedTime);
   drawPipes();
   drawGround();
-  drawBuddy();
+
+  const blinkOff = invulnerable && Math.floor(elapsedTime * 10) % 2 === 0;
+  if (!blinkOff){
+    drawBuddy();
+  }
 }
 
 const startScreen = document.getElementById('startScreen');
@@ -250,19 +277,55 @@ const finalScoreEl = document.getElementById('finalScore');
 const bestScoreEl = document.getElementById('bestScore');
 const startBtn = document.getElementById('startBtn');
 const retryBtn = document.getElementById('retryBtn');
+const livesDisplay = document.getElementById('livesDisplay');
+const heartEls = Array.from(document.querySelectorAll('#livesDisplay .heart'));
+const diffButtons = Array.from(document.querySelectorAll('.diff-btn'));
+
+diffButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    diffButtons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyDifficulty(btn.dataset.diff);
+  });
+});
+
+function updateHeartsDisplay(){
+  heartEls.forEach((heart, index) => {
+    heart.classList.toggle('lost', index >= lives);
+  });
+}
 
 function startGame(){
   pipes = [];
   timeSinceSpawn = 0;
   score = 0;
   groundOffset = 0;
+  lives = LIVES_MAX;
+  invulnerable = false;
+  invulnerableTimer = 0;
   resetBuddy();
   state = 'playing';
 
   startScreen.classList.add('hidden');
   gameOverScreen.classList.add('hidden');
   hud.classList.remove('hidden');
+  livesDisplay.classList.remove('hidden');
   scoreDisplay.textContent = '0';
+  updateHeartsDisplay();
+}
+
+function loseLife(){
+  lives -= 1;
+  updateHeartsDisplay();
+
+  if (lives <= 0){
+    endGame();
+    return;
+  }
+
+  invulnerable = true;
+  invulnerableTimer = INVULNERABLE_DURATION;
+  buddy.velocityY = FLAP_VELOCITY * 0.7;
 }
 
 function endGame(){
@@ -274,6 +337,7 @@ function endGame(){
   finalScoreEl.textContent = String(score);
   bestScoreEl.textContent = String(bestScore);
   hud.classList.add('hidden');
+  livesDisplay.classList.add('hidden');
   gameOverScreen.classList.remove('hidden');
 }
 
@@ -291,8 +355,13 @@ function loop(timestamp){
     groundOffset += PIPE_SPEED * dt;
     scoreDisplay.textContent = String(score);
 
-    if (checkCollisions()){
-      endGame();
+    if (invulnerable){
+      invulnerableTimer -= dt;
+      if (invulnerableTimer <= 0){
+        invulnerable = false;
+      }
+    } else if (checkCollisions()){
+      loseLife();
     }
   }
 

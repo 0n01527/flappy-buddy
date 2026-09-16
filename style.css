@@ -134,6 +134,30 @@ canvas{
   opacity:0.6;
 }
 
+.difficulty-select{
+  display:flex;
+  gap:8px;
+}
+
+.diff-btn{
+  font-family:'Nunito',sans-serif;
+  font-size:13px;
+  font-weight:700;
+  color:var(--cream);
+  background:rgba(255,255,255,0.08);
+  border:2px solid rgba(255,255,255,0.18);
+  border-radius:999px;
+  padding:7px 16px;
+  cursor:pointer;
+  transition:background 0.15s ease, border-color 0.15s ease;
+}
+
+.diff-btn.active{
+  background:var(--mint);
+  border-color:var(--mint);
+  color:var(--ink);
+}
+
 .scoreLine{
   font-size:16px;
   margin:0;
@@ -165,4 +189,26 @@ canvas{
   font-size:48px;
   color:var(--cream);
   text-shadow:0 3px 0 rgba(0,0,0,0.35);
+}
+
+#livesDisplay{
+  position:absolute;
+  top:20px;
+  right:20px;
+  display:flex;
+  gap:4px;
+  pointer-events:none;
+}
+#livesDisplay.hidden{ display:none; }
+
+.heart{
+  font-size:22px;
+  color:#ff5c7a;
+  text-shadow:0 2px 0 rgba(0,0,0,0.3);
+  transition:opacity 0.2s ease, transform 0.2s ease;
+}
+
+.heart.lost{
+  color:rgba(255,255,255,0.2);
+  transform:scale(0.85);
 }

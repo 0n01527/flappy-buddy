@@ -17,6 +17,13 @@
       <h1>Flappy Buddy</h1>
       <p class="tagline">기둥 사이로 버디를 안전하게 날려보내세요</p>
       <div class="buddy-preview"></div>
+
+      <div class="difficulty-select" id="difficultySelect">
+        <button class="diff-btn" data-diff="easy">쉬움</button>
+        <button class="diff-btn active" data-diff="normal">보통</button>
+        <button class="diff-btn" data-diff="hard">어려움</button>
+      </div>
+
       <button id="startBtn" class="btn">시작하기</button>
       <p class="hint">스페이스바 / 클릭 / 탭으로 날갯짓</p>
     </div>
@@ -25,11 +32,17 @@
       <h2>도전 실패!</h2>
       <p class="scoreLine">이번 점수: <span id="finalScore">0</span></p>
       <p class="scoreLine best">최고 점수: <span id="bestScore">0</span></p>
-      <button id="retryBtn" class="btn">다시 도전</button>
+      <button id="retryBtn" class="btn">다시 시작</button>
     </div>
 
     <div id="hud" class="hidden">
       <span id="scoreDisplay">0</span>
+    </div>
+
+    <div id="livesDisplay" class="hidden">
+      <span class="heart" data-life="1">♥</span>
+      <span class="heart" data-life="2">♥</span>
+      <span class="heart" data-life="3">♥</span>
     </div>
   </div>
 
