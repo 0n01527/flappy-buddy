@@ -136,6 +136,12 @@ let invulnerable = false;
 let invulnerableTimer = 0;
 const INVULNERABLE_DURATION = 1.2; // seconds
 
+let paused = false;
+
+const COUNTDOWN_START = 3;
+let countdownValue = COUNTDOWN_START;
+let countdownTimer = 0;
+
 let lastTime = null;
 
 function resetBuddy(){
@@ -267,16 +273,33 @@ function render(){
   if (!blinkOff){
     drawBuddy();
   }
+
+  if (state === 'countdown'){
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+    ctx.save();
+    ctx.font = "800 64px 'Baloo 2', sans-serif";
+    ctx.fillStyle = '#fff3e2';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 8;
+    ctx.fillText(String(countdownValue), WIDTH / 2, HEIGHT / 2);
+    ctx.restore();
+  }
 }
 
 const startScreen = document.getElementById('startScreen');
 const gameOverScreen = document.getElementById('gameOverScreen');
+const pauseScreen = document.getElementById('pauseScreen');
 const hud = document.getElementById('hud');
 const scoreDisplay = document.getElementById('scoreDisplay');
 const finalScoreEl = document.getElementById('finalScore');
 const bestScoreEl = document.getElementById('bestScore');
 const startBtn = document.getElementById('startBtn');
 const retryBtn = document.getElementById('retryBtn');
+const resumeBtn = document.getElementById('resumeBtn');
 const livesDisplay = document.getElementById('livesDisplay');
 const heartEls = Array.from(document.querySelectorAll('#livesDisplay .heart'));
 const diffButtons = Array.from(document.querySelectorAll('.diff-btn'));
@@ -303,15 +326,25 @@ function startGame(){
   lives = LIVES_MAX;
   invulnerable = false;
   invulnerableTimer = 0;
+  paused = false;
   resetBuddy();
-  state = 'playing';
+
+  countdownValue = COUNTDOWN_START;
+  countdownTimer = 1;
+  state = 'countdown';
 
   startScreen.classList.add('hidden');
   gameOverScreen.classList.add('hidden');
+  pauseScreen.classList.add('hidden');
   hud.classList.remove('hidden');
   livesDisplay.classList.remove('hidden');
   scoreDisplay.textContent = '0';
   updateHeartsDisplay();
+}
+
+function setPaused(value){
+  paused = value;
+  pauseScreen.classList.toggle('hidden', !paused);
 }
 
 function loseLife(){
@@ -348,7 +381,18 @@ function loop(timestamp){
 
   elapsedTime += dt;
 
-  if (state === 'playing'){
+  if (state === 'countdown'){
+    countdownTimer -= dt;
+    if (countdownTimer <= 0){
+      countdownValue -= 1;
+      countdownTimer = 1;
+      if (countdownValue <= 0){
+        state = 'playing';
+      }
+    }
+  }
+
+  if (state === 'playing' && !paused){
     updateBuddy(dt);
     updatePipes(dt);
     updateScore();
@@ -375,17 +419,25 @@ function loop(timestamp){
 
 function handleFlapInput(e){
   if (e.type === 'keydown' && e.code !== 'Space') return;
-  if (state !== 'playing') return;
+  if (state !== 'playing' || paused) return;
   e.preventDefault();
   flap();
 }
 
+function handlePauseInput(e){
+  if (e.code !== 'KeyP') return;
+  if (state !== 'playing') return;
+  setPaused(!paused);
+}
+
 window.addEventListener('keydown', handleFlapInput);
+window.addEventListener('keydown', handlePauseInput);
 canvas.addEventListener('mousedown', handleFlapInput);
 canvas.addEventListener('touchstart', handleFlapInput, { passive:false });
 
 startBtn.addEventListener('click', startGame);
 retryBtn.addEventListener('click', startGame);
+resumeBtn.addEventListener('click', () => setPaused(false));
 
 resetBuddy();
 requestAnimationFrame(loop);
